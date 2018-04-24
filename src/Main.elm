@@ -23,6 +23,13 @@ type Direction
     | Right
 
 
+type alias Tile =
+    { x : Int
+    , y : Int
+    , code : Int
+    }
+
+
 type alias Model =
     { charactersPath : String
     , tilesPath : String
@@ -43,7 +50,7 @@ init flags =
     ( { charactersPath = flags.charactersPath
       , tilesPath = flags.tilesPath
       , elapsedTime = 0
-      , mario = { x = 0, y = 0, direction = Left }
+      , mario = { x = 0, y = 144, direction = Right }
       , keyPressed = "Nothing pressed"
       }
     , Cmd.none
@@ -81,6 +88,17 @@ update msg model =
 ---- VIEW ----
 
 
+lvl1 =
+    List.concat
+        [ List.range 0 15 |> List.concatMap (\i -> [ { code = 0, x = i, y = 10 }, { code = 0, x = i, y = 11 } ])
+        , [ { code = 693, x = 4, y = 1 }, { code = 660, x = 4, y = 0 }, { code = 694, x = 5, y = 1 }, { code = 661, x = 5, y = 0 }, { code = 695, x = 6, y = 1 }, { code = 662, x = 6, y = 0 } ]
+        , [ { code = 24, x = 1, y = 6 }, { code = 1, x = 5, y = 6 }, { code = 24, x = 6, y = 6 }, { code = 1, x = 7, y = 6 }, { code = 24, x = 8, y = 6 }, { code = 1, x = 9, y = 6 }, { code = 24, x = 7, y = 3 } ]
+        , [ { code = 272, x = 1, y = 9 }, { code = 307, x = 2, y = 9 }, { code = 274, x = 3, y = 9 }, { code = 273, x = 2, y = 8 } ]
+        , [ { code = 308, x = 8, y = 9 }, { code = 309, x = 9, y = 9 }, { code = 310, x = 10, y = 9 } ]
+        , [ { code = 297, x = 13, y = 9 }, { code = 298, x = 14, y = 9 }, { code = 264, x = 13, y = 8 }, { code = 265, x = 14, y = 8 } ]
+        ]
+
+
 view : Model -> Html Msg
 view model =
     let
@@ -92,15 +110,14 @@ view model =
             , svg
                 [ width "100%"
                 , height "100%"
-                , viewBox "0 0 640 400"
+                , viewBox "0 0 256 192"
                 ]
-                [ drawTile 0 0 0 model.tilesPath
-                , drawTile 1 1 0 model.tilesPath
-                , drawTile 33 2 0 model.tilesPath
-                , drawTile 34 3 0 model.tilesPath
-                , drawTile 65 4 0 model.tilesPath
-                , drawMario model.mario model.charactersPath
-                ]
+                (List.concat
+                    [ [ rect [ width "100%", height "100%", fill "#529AFF" ] [] ]
+                    , (drawLevel lvl1 model.tilesPath)
+                    , [ drawMario model.mario model.charactersPath ]
+                    ]
+                )
             ]
 
 
@@ -119,6 +136,11 @@ moveMario dt keyPressed mario =
             { mario | x = mario.x + dt / 10, direction = Right }
         else
             mario
+
+
+drawLevel : List Tile -> String -> List (Svg Msg)
+drawLevel lvl spritesPath =
+    List.map (\tile -> drawTile tile.code tile.x tile.y spritesPath) lvl
 
 
 drawTile : Int -> Int -> Int -> String -> Svg Msg
