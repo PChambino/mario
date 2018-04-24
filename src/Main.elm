@@ -25,6 +25,7 @@ type Direction
 
 type alias Model =
     { charactersPath : String
+    , tilesPath : String
     , elapsedTime : Float
     , mario : Entity
     , keyPressed : String
@@ -33,12 +34,14 @@ type alias Model =
 
 type alias Flags =
     { charactersPath : String
+    , tilesPath : String
     }
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( { charactersPath = flags.charactersPath
+      , tilesPath = flags.tilesPath
       , elapsedTime = 0
       , mario = { x = 0, y = 0, direction = Left }
       , keyPressed = "Nothing pressed"
@@ -91,7 +94,13 @@ view model =
                 , height "100%"
                 , viewBox "0 0 640 400"
                 ]
-                [ drawMario model.mario model.charactersPath ]
+                [ drawTile 0 0 0 model.tilesPath
+                , drawTile 1 1 0 model.tilesPath
+                , drawTile 33 2 0 model.tilesPath
+                , drawTile 34 3 0 model.tilesPath
+                , drawTile 65 4 0 model.tilesPath
+                , drawMario model.mario model.charactersPath
+                ]
             ]
 
 
@@ -110,6 +119,42 @@ moveMario dt keyPressed mario =
             { mario | x = mario.x + dt / 10, direction = Right }
         else
             mario
+
+
+drawTile : Int -> Int -> Int -> String -> Svg Msg
+drawTile code gridX gridY spritesPath =
+    let
+        size =
+            16
+
+        imageWidth =
+            528
+
+        spritesPerLine =
+            imageWidth // size
+
+        screenX =
+            gridX * size
+
+        screenY =
+            gridY * size
+
+        tileX =
+            (code % spritesPerLine) * size
+
+        tileY =
+            (code // spritesPerLine) * size
+
+        tileBox =
+            [ tileX, tileY, size, size ] |> List.map toString |> String.join " "
+
+        px n =
+            (toString n) ++ "px"
+    in
+        svg
+            [ x (toString screenX), y (toString screenY), width (px size), height (px size), viewBox tileBox, version "1.1" ]
+            [ image [ x "0px", y "0px", width (px imageWidth), height "448px", xlinkHref spritesPath ] []
+            ]
 
 
 drawMario : Entity -> String -> Svg Msg
