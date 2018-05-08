@@ -36,6 +36,7 @@ type alias Model =
     , elapsedTime : Float
     , mario : Entity
     , keyPressed : String
+    , collided : String
     }
 
 
@@ -52,6 +53,7 @@ init flags =
       , elapsedTime = 0
       , mario = { x = 0, y = 144, direction = Right }
       , keyPressed = "Nothing pressed"
+      , collided = "Nope."
       }
     , Cmd.none
     )
@@ -72,16 +74,60 @@ update msg model =
     case msg of
         TimeUpdate dt ->
             let
-                updatedModel =
+                updatedTime =
                     { model | elapsedTime = model.elapsedTime + (dt / 1000) }
+
+                movedMario =
+                    moveMario dt model.keyPressed model.mario
+
+                collidedTiles =
+                    calculateTilesCollisions movedMario
+
+                collidedMario =
+                    collideMario movedMario collidedTiles
             in
-                ( { updatedModel | mario = moveMario dt model.keyPressed model.mario }, Cmd.none )
+                ( { model
+                    | elapsedTime = model.elapsedTime + (dt / 1000)
+                    , mario = collidedMario
+                    , collided = collidedTiles |> List.map (\t -> toString t.code) |> String.join ", "
+                  }
+                , Cmd.none
+                )
 
         KeyDown keyCode ->
             ( { model | keyPressed = toString keyCode }, Cmd.none )
 
         KeyUp keyCode ->
             ( { model | keyPressed = "Nothing pressed" }, Cmd.none )
+
+
+calculateTilesCollisions : Entity -> List Tile
+calculateTilesCollisions mario =
+    let
+        gridSize =
+            16
+
+        collidableTile : Tile -> Bool
+        collidableTile t =
+            List.member t.code [ 297, 298 ]
+
+        collidesWithTile : Tile -> Bool
+        collidesWithTile t =
+            mario.x + gridSize >= toFloat t.x * gridSize && mario.x < toFloat (t.x + 1) * gridSize
+    in
+        lvl1
+            |> List.filter collidableTile
+            |> List.filter collidesWithTile
+
+
+collideMario : Entity -> List Tile -> Entity
+collideMario mario tiles =
+    case tiles of
+        [] ->
+            mario
+
+        tile :: _ ->
+            { mario | x = toFloat (tile.x - 1) * 16 }
 
 
 
@@ -115,6 +161,7 @@ view model =
                     ]
                 )
             , Html.div [] [ text model.keyPressed ]
+            , Html.div [] [ text model.collided ]
             ]
 
 
@@ -201,6 +248,8 @@ drawMario mario spritesPath =
     in
         svg [ x (toString mario.x), y (toString mario.y), width "16px", height "16px", viewBox spritePosition, version "1.1" ]
             [ image [ x "0px", y "0px", width "513px", height "401px", xlinkHref spritesPath, imageRendering "pixelated" ] []
+
+            -- , rect [ x "276px", y "44px", width "16px", height "16px", Svg.Attributes.style "fill-opacity:0;stroke:black;stroke-width:1;" ] []
             ]
 
 
