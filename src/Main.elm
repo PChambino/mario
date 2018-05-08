@@ -172,7 +172,7 @@ drawTile code gridX gridY spritesPath =
     in
         svg
             [ x (toString screenX), y (toString screenY), width (px size), height (px size), viewBox tileBox, version "1.1" ]
-            [ image [ x "0px", y "0px", width (px imageWidth), height "448px", xlinkHref spritesPath ] []
+            [ image [ x "0px", y "0px", width (px imageWidth), height "448px", xlinkHref spritesPath, imageRendering "pixelated" ] []
             ]
 
 
@@ -200,7 +200,7 @@ drawMario mario spritesPath =
                     marioRightSprite
     in
         svg [ x (toString mario.x), y (toString mario.y), width "16px", height "16px", viewBox spritePosition, version "1.1" ]
-            [ image [ x "0px", y "0px", width "513px", height "401px", xlinkHref spritesPath ] []
+            [ image [ x "0px", y "0px", width "513px", height "401px", xlinkHref spritesPath, imageRendering "pixelated" ] []
             ]
 
 
