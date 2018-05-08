@@ -106,18 +106,15 @@ view model =
             (round model.elapsedTime) % 10
     in
         Html.div []
-            [ text model.keyPressed
-            , svg
-                [ width "100%"
-                , height "100%"
-                , viewBox "0 0 256 192"
-                ]
+            [ svg
+                [ width "800px", viewBox "0 0 256 192" ]
                 (List.concat
                     [ [ rect [ width "100%", height "100%", fill "#529AFF" ] [] ]
                     , (drawLevel lvl1 model.tilesPath)
                     , [ drawMario model.mario model.charactersPath ]
                     ]
                 )
+            , Html.div [] [ text model.keyPressed ]
             ]
 
 
