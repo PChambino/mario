@@ -51,7 +51,7 @@ init flags =
     ( { charactersPath = flags.charactersPath
       , tilesPath = flags.tilesPath
       , elapsedTime = 0
-      , mario = { x = 0, y = 144, direction = Right }
+      , mario = { x = 0, y = 128, direction = Right }
       , keyPressed = "Nothing pressed"
       , collided = "Nope."
       }
@@ -78,7 +78,9 @@ update msg model =
                     { model | elapsedTime = model.elapsedTime + (dt / 1000) }
 
                 movedMario =
-                    moveMario dt model.keyPressed model.mario
+                    model.mario
+                        |> moveMario dt model.keyPressed
+                        |> applyGravity
 
                 collidedTiles =
                     calculateTilesCollisions movedMario
@@ -101,6 +103,11 @@ update msg model =
             ( { model | keyPressed = "Nothing pressed" }, Cmd.none )
 
 
+applyGravity : Entity -> Entity
+applyGravity entity =
+    { entity | y = entity.y + 1 }
+
+
 calculateTilesCollisions : Entity -> List Tile
 calculateTilesCollisions mario =
     let
@@ -109,11 +116,12 @@ calculateTilesCollisions mario =
 
         collidableTile : Tile -> Bool
         collidableTile t =
-            List.member t.code [ 297, 298 ]
+            List.member t.code [ 0, 297, 298 ]
 
         collidesWithTile : Tile -> Bool
         collidesWithTile t =
-            mario.x + gridSize >= toFloat t.x * gridSize && mario.x < toFloat (t.x + 1) * gridSize
+            (mario.x + gridSize > toFloat t.x * gridSize && mario.x < toFloat (t.x + 1) * gridSize)
+                && (mario.y + gridSize > toFloat t.y * gridSize && mario.y < toFloat (t.y + 1) * gridSize)
     in
         lvl1
             |> List.filter collidableTile
@@ -122,12 +130,19 @@ calculateTilesCollisions mario =
 
 collideMario : Entity -> List Tile -> Entity
 collideMario mario tiles =
-    case tiles of
-        [] ->
-            mario
+    let
+        marioGridX =
+            round (mario.x / 16)
 
-        tile :: _ ->
-            { mario | x = toFloat (tile.x - 1) * 16 }
+        marioGridY =
+            round (mario.y / 16)
+    in
+        case tiles of
+            [] ->
+                mario
+
+            tiles ->
+                { mario | y = toFloat marioGridY * 16 }
 
 
 
