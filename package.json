@@ -5,10 +5,12 @@
   "main": "index.js",
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "create-elm-app": "^1.10.3"
+  "devDependencies": {
+    "create-elm-app": "^1.10.3",
+    "gh-pages": "^1.1.0"
   },
   "scripts": {
-    "start": "elm-app start"
+    "start": "elm-app start",
+    "publish": "elm-app build && gh-pages -d build && open https://pchambino.github.io/mario"
   }
 }
