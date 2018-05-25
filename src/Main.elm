@@ -51,7 +51,7 @@ init flags =
     ( { charactersPath = flags.charactersPath
       , tilesPath = flags.tilesPath
       , elapsedTime = 0
-      , mario = { x = 0, y = 128, direction = Right }
+      , mario = { x = 80, y = 32, direction = Right }
       , keyPressed = "Nothing pressed"
       , collided = "Nope."
       }
@@ -116,11 +116,11 @@ calculateTilesCollisions mario =
 
         collidableTile : Tile -> Bool
         collidableTile t =
-            List.member t.code [ 0, 297, 298 ]
+            List.member t.code [ 0, 1, 297, 298, 264, 265 ]
 
         collidesWithTile : Tile -> Bool
         collidesWithTile t =
-            (mario.x + gridSize > toFloat t.x * gridSize && mario.x < toFloat (t.x + 1) * gridSize)
+            (mario.x + gridSize - 2 > toFloat t.x * gridSize && mario.x + 2 < toFloat (t.x + 1) * gridSize)
                 && (mario.y + gridSize > toFloat t.y * gridSize && mario.y < toFloat (t.y + 1) * gridSize)
     in
         lvl1
@@ -136,13 +136,36 @@ collideMario mario tiles =
 
         marioGridY =
             round (mario.y / 16)
+
+        noCornerTiles =
+            tiles |> List.filter (\t -> t.y == marioGridY || t.x == marioGridX)
+
+        anyTileBelow =
+            not (tiles |> List.filter (\t -> t.y > marioGridY) |> List.isEmpty)
+
+        anyTileRight =
+            not (noCornerTiles |> List.filter (\t -> t.x > marioGridX) |> List.isEmpty)
+
+        anyTileLeft =
+            not (noCornerTiles |> List.filter (\t -> t.x < marioGridX) |> List.isEmpty)
     in
         case tiles of
             [] ->
                 mario
 
             tiles ->
-                { mario | y = toFloat marioGridY * 16 }
+                if anyTileBelow && anyTileRight then
+                    { mario | x = toFloat marioGridX * 16 + 2, y = toFloat marioGridY * 16 }
+                else if anyTileBelow && anyTileLeft then
+                    { mario | x = toFloat marioGridX * 16 - 2, y = toFloat marioGridY * 16 }
+                else if anyTileRight then
+                    { mario | x = toFloat marioGridX * 16 + 2 }
+                else if anyTileLeft then
+                    { mario | x = toFloat marioGridX * 16 - 2 }
+                else if anyTileBelow then
+                    { mario | y = toFloat marioGridY * 16 }
+                else
+                    mario
 
 
 
