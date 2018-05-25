@@ -15,12 +15,18 @@ type alias Entity =
     { x : Float
     , y : Float
     , direction : Direction
+    , state : EntityState
     }
 
 
 type Direction
     = Left
     | Right
+
+
+type EntityState
+    = Idle
+    | InAir
 
 
 type alias Tile =
@@ -51,7 +57,7 @@ init flags =
     ( { charactersPath = flags.charactersPath
       , tilesPath = flags.tilesPath
       , elapsedTime = 0
-      , mario = { x = 80, y = 32, direction = Right }
+      , mario = { x = 80, y = 32, direction = Right, state = Idle }
       , keyPressed = "Nothing pressed"
       , collided = "Nope."
       }
@@ -155,15 +161,15 @@ collideMario mario tiles =
 
             tiles ->
                 if anyTileBelow && anyTileRight then
-                    { mario | x = toFloat marioGridX * 16 + 2, y = toFloat marioGridY * 16 }
+                    { mario | x = toFloat marioGridX * 16 + 2, y = toFloat marioGridY * 16, state = Idle }
                 else if anyTileBelow && anyTileLeft then
-                    { mario | x = toFloat marioGridX * 16 - 2, y = toFloat marioGridY * 16 }
+                    { mario | x = toFloat marioGridX * 16 - 2, y = toFloat marioGridY * 16, state = Idle }
                 else if anyTileRight then
                     { mario | x = toFloat marioGridX * 16 + 2 }
                 else if anyTileLeft then
                     { mario | x = toFloat marioGridX * 16 - 2 }
                 else if anyTileBelow then
-                    { mario | y = toFloat marioGridY * 16 }
+                    { mario | y = toFloat marioGridY * 16, state = Idle }
                 else
                     mario
 
@@ -211,11 +217,16 @@ moveMario dt keyPressed mario =
 
         rightArrow =
             "39"
+
+        topArrow =
+            "38"
     in
         if keyPressed == leftArrow then
             { mario | x = mario.x - dt / 10, direction = Left }
         else if keyPressed == rightArrow then
             { mario | x = mario.x + dt / 10, direction = Right }
+        else if keyPressed == topArrow && mario.state /= InAir then
+            { mario | y = mario.y - 32, state = InAir }
         else
             mario
 
