@@ -41,7 +41,7 @@ type alias Model =
     , tilesPath : String
     , elapsedTime : Float
     , mario : Entity
-    , keyPressed : String
+    , keysPressed : List KeyCode
     , collided : String
     }
 
@@ -58,7 +58,7 @@ init flags =
       , tilesPath = flags.tilesPath
       , elapsedTime = 0
       , mario = { x = 80, y = 32, direction = Right, state = Idle }
-      , keyPressed = "Nothing pressed"
+      , keysPressed = []
       , collided = "Nope."
       }
     , Cmd.none
@@ -85,7 +85,7 @@ update msg model =
 
                 movedMario =
                     model.mario
-                        |> moveMario dt model.keyPressed
+                        |> moveMario dt model.keysPressed
                         |> applyGravity
 
                 collidedTiles =
@@ -103,10 +103,10 @@ update msg model =
                 )
 
         KeyDown keyCode ->
-            ( { model | keyPressed = toString keyCode }, Cmd.none )
+            ( { model | keysPressed = keyCode :: model.keysPressed }, Cmd.none )
 
         KeyUp keyCode ->
-            ( { model | keyPressed = "Nothing pressed" }, Cmd.none )
+            ( { model | keysPressed = model.keysPressed |> List.filter (\k -> k /= keyCode) }, Cmd.none )
 
 
 applyGravity : Entity -> Entity
@@ -204,28 +204,31 @@ view model =
                     , [ drawMario model.mario model.charactersPath ]
                     ]
                 )
-            , Html.div [] [ text model.keyPressed ]
+            , Html.div [] [ text (model.keysPressed |> List.map toString |> String.join ", ") ]
             , Html.div [] [ text model.collided ]
             ]
 
 
-moveMario : Time -> String -> Entity -> Entity
-moveMario dt keyPressed mario =
+moveMario : Time -> List KeyCode -> Entity -> Entity
+moveMario dt keysPressed mario =
     let
         leftArrow =
-            "37"
+            37
 
         rightArrow =
-            "39"
+            39
 
         topArrow =
-            "38"
+            38
+
+        keyPressed =
+            List.head keysPressed
     in
-        if keyPressed == leftArrow then
+        if keyPressed == Just leftArrow then
             { mario | x = mario.x - dt / 10, direction = Left }
-        else if keyPressed == rightArrow then
+        else if keyPressed == Just rightArrow then
             { mario | x = mario.x + dt / 10, direction = Right }
-        else if keyPressed == topArrow && mario.state /= InAir then
+        else if keyPressed == Just topArrow && mario.state /= InAir then
             { mario | y = mario.y - 32, state = InAir }
         else
             mario
