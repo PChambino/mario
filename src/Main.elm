@@ -14,6 +14,7 @@ import Time exposing (Time)
 type alias Entity =
     { x : Float
     , y : Float
+    , velocity : Float
     , direction : Direction
     , state : EntityState
     }
@@ -57,7 +58,7 @@ init flags =
     ( { charactersPath = flags.charactersPath
       , tilesPath = flags.tilesPath
       , elapsedTime = 0
-      , mario = { x = 80, y = 32, direction = Right, state = Idle }
+      , mario = { x = 80, y = 32, velocity = 0, direction = Right, state = Idle }
       , keysPressed = []
       , collided = "Nope."
       }
@@ -85,6 +86,7 @@ update msg model =
 
                 movedMario =
                     model.mario
+                        |> updateMarioVelocity dt model.keysPressed
                         |> moveMario dt model.keysPressed
                         |> applyGravity
 
@@ -209,8 +211,8 @@ view model =
             ]
 
 
-moveMario : Time -> List KeyCode -> Entity -> Entity
-moveMario dt keysPressed mario =
+updateMarioVelocity : Time -> List KeyCode -> Entity -> Entity
+updateMarioVelocity dt keysPressed mario =
     let
         leftArrow =
             37
@@ -218,20 +220,33 @@ moveMario dt keysPressed mario =
         rightArrow =
             39
 
+        velocity =
+            0.1
+
+        keyPressed =
+            List.head keysPressed
+    in
+        if keyPressed == Just leftArrow then
+            { mario | velocity = -velocity, direction = Left }
+        else if keyPressed == Just rightArrow then
+            { mario | velocity = velocity, direction = Right }
+        else
+            { mario | velocity = 0 }
+
+
+moveMario : Time -> List KeyCode -> Entity -> Entity
+moveMario dt keysPressed mario =
+    let
         topArrow =
             38
 
         keyPressed =
             List.head keysPressed
     in
-        if keyPressed == Just leftArrow then
-            { mario | x = mario.x - dt / 10, direction = Left }
-        else if keyPressed == Just rightArrow then
-            { mario | x = mario.x + dt / 10, direction = Right }
-        else if keyPressed == Just topArrow && mario.state /= InAir then
+        if keyPressed == Just topArrow && mario.state /= InAir then
             { mario | y = mario.y - 32, state = InAir }
         else
-            mario
+            { mario | x = mario.x + mario.velocity * dt }
 
 
 drawLevel : List Tile -> String -> List (Svg Msg)
