@@ -217,10 +217,10 @@ updateMarioAcceleration : Time -> List KeyCode -> Entity -> Entity
 updateMarioAcceleration dt keysPressed mario =
     let
         drag =
-            Debug.log "drag" (mario.velocity * 2)
+            mario.velocity * 2
 
         acceleration =
-            Debug.log "acceleration" (100 - abs drag)
+            200
 
         leftArrow =
             37
@@ -232,9 +232,9 @@ updateMarioAcceleration dt keysPressed mario =
             List.head keysPressed
     in
         if keyPressed == Just leftArrow then
-            { mario | acceleration = -acceleration, direction = Left }
+            { mario | acceleration = -acceleration - drag, direction = Left }
         else if keyPressed == Just rightArrow then
-            { mario | acceleration = acceleration, direction = Right }
+            { mario | acceleration = acceleration - drag, direction = Right }
         else
             { mario | acceleration = -drag }
 
@@ -243,7 +243,7 @@ updateMarioVelocity : Time -> List KeyCode -> Entity -> Entity
 updateMarioVelocity dt keysPressed mario =
     let
         velocity =
-            Debug.log "velocity" (mario.velocity + mario.acceleration * dt / 1000)
+            mario.velocity + mario.acceleration * dt / 1000
 
         minVelocity =
             2
