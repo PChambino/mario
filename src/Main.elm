@@ -165,13 +165,13 @@ collideMario mario tiles =
 
             tiles ->
                 if anyTileBelow && anyTileRight then
-                    { mario | x = toFloat marioGridX * 16 + 2, y = toFloat marioGridY * 16, state = Idle }
+                    { mario | x = toFloat marioGridX * 16 + 2, y = toFloat marioGridY * 16, velocity = 0, state = Idle }
                 else if anyTileBelow && anyTileLeft then
-                    { mario | x = toFloat marioGridX * 16 - 2, y = toFloat marioGridY * 16, state = Idle }
+                    { mario | x = toFloat marioGridX * 16 - 2, y = toFloat marioGridY * 16, velocity = 0, state = Idle }
                 else if anyTileRight then
-                    { mario | x = toFloat marioGridX * 16 + 2 }
+                    { mario | x = toFloat marioGridX * 16 + 2, velocity = 0 }
                 else if anyTileLeft then
-                    { mario | x = toFloat marioGridX * 16 - 2 }
+                    { mario | x = toFloat marioGridX * 16 - 2, velocity = 0 }
                 else if anyTileBelow then
                     { mario | y = toFloat marioGridY * 16, state = Idle }
                 else
