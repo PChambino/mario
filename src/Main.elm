@@ -15,6 +15,7 @@ type alias Entity =
     { x : Float
     , y : Float
     , velocity : Float
+    , acceleration : Float
     , direction : Direction
     , state : EntityState
     }
@@ -58,7 +59,7 @@ init flags =
     ( { charactersPath = flags.charactersPath
       , tilesPath = flags.tilesPath
       , elapsedTime = 0
-      , mario = { x = 80, y = 32, velocity = 0, direction = Right, state = Idle }
+      , mario = { x = 80, y = 32, velocity = 0, acceleration = 0, direction = Right, state = Idle }
       , keysPressed = []
       , collided = "Nope."
       }
@@ -86,6 +87,7 @@ update msg model =
 
                 movedMario =
                     model.mario
+                        |> updateMarioAcceleration dt model.keysPressed
                         |> updateMarioVelocity dt model.keysPressed
                         |> moveMario dt model.keysPressed
                         |> applyGravity
@@ -211,25 +213,52 @@ view model =
             ]
 
 
-updateMarioVelocity : Time -> List KeyCode -> Entity -> Entity
-updateMarioVelocity dt keysPressed mario =
+updateMarioAcceleration : Time -> List KeyCode -> Entity -> Entity
+updateMarioAcceleration dt keysPressed mario =
     let
+        drag =
+            Debug.log "drag" (mario.velocity * 2)
+
+        acceleration =
+            Debug.log "acceleration" (100 - abs drag)
+
         leftArrow =
             37
 
         rightArrow =
             39
 
-        velocity =
-            0.1
-
         keyPressed =
             List.head keysPressed
     in
         if keyPressed == Just leftArrow then
-            { mario | velocity = -velocity, direction = Left }
+            { mario | acceleration = -acceleration, direction = Left }
         else if keyPressed == Just rightArrow then
-            { mario | velocity = velocity, direction = Right }
+            { mario | acceleration = acceleration, direction = Right }
+        else
+            { mario | acceleration = -drag }
+
+
+updateMarioVelocity : Time -> List KeyCode -> Entity -> Entity
+updateMarioVelocity dt keysPressed mario =
+    let
+        velocity =
+            Debug.log "velocity" (mario.velocity + mario.acceleration * dt / 1000)
+
+        minVelocity =
+            2
+
+        leftArrow =
+            37
+
+        rightArrow =
+            39
+
+        keyPressed =
+            List.head keysPressed
+    in
+        if keyPressed == Just leftArrow || keyPressed == Just rightArrow || abs velocity > minVelocity then
+            { mario | velocity = velocity }
         else
             { mario | velocity = 0 }
 
@@ -246,7 +275,7 @@ moveMario dt keysPressed mario =
         if keyPressed == Just topArrow && mario.state /= InAir then
             { mario | y = mario.y - 32, state = InAir }
         else
-            { mario | x = mario.x + mario.velocity * dt }
+            { mario | x = mario.x + mario.velocity * dt / 1000 }
 
 
 drawLevel : List Tile -> String -> List (Svg Msg)
