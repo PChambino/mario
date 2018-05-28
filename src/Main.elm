@@ -107,7 +107,10 @@ update msg model =
                 )
 
         KeyDown keyCode ->
-            ( { model | keysPressed = keyCode :: model.keysPressed }, Cmd.none )
+            if List.member keyCode model.keysPressed then
+                ( model, Cmd.none )
+            else
+                ( { model | keysPressed = keyCode :: model.keysPressed }, Cmd.none )
 
         KeyUp keyCode ->
             ( { model | keysPressed = model.keysPressed |> List.filter (\k -> k /= keyCode) }, Cmd.none )
