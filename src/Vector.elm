@@ -20,6 +20,11 @@ add a b =
     { x = a.x + b.x, y = a.y + b.y }
 
 
+negate : Vector -> Vector
+negate vec =
+    scale -1 vec
+
+
 length : Vector -> Float
 length vec =
     sqrt (vec.x * vec.x + vec.y * vec.y)

@@ -214,8 +214,36 @@ view model =
 updateMarioAcceleration : Time -> List KeyCode -> Entity -> Entity
 updateMarioAcceleration dt keysPressed mario =
     let
-        drag =
-            mario.velocity.x * 2
+        direction =
+            if keyPressed == Just leftArrow then
+                Left
+            else if keyPressed == Just rightArrow then
+                Right
+            else
+                mario.direction
+
+        acceleration =
+            Vector.zero
+                |> applyGravity
+                |> applyForce
+                |> applyDrag
+
+        applyGravity acc =
+            { acc | y = 100 }
+
+        applyForce acc =
+            if keyPressed == Just leftArrow then
+                { acc | x = -baseAcceleration }
+            else if keyPressed == Just rightArrow then
+                { acc | x = baseAcceleration }
+            else
+                { acc | x = 0 }
+
+        applyDrag acc =
+            mario.velocity
+                |> Vector.scale 2
+                |> Vector.negate
+                |> Vector.add acc
 
         baseAcceleration =
             200
@@ -228,33 +256,8 @@ updateMarioAcceleration dt keysPressed mario =
 
         keyPressed =
             List.head keysPressed
-
-        acceleration =
-            mario.acceleration
-
-        gravity =
-            100
-
-        newHorizontalAcceleration =
-            if keyPressed == Just leftArrow then
-                -baseAcceleration - drag
-            else if keyPressed == Just rightArrow then
-                baseAcceleration - drag
-            else
-                -drag
-
-        newAcceleration =
-            { acceleration | x = newHorizontalAcceleration, y = gravity }
-
-        newDirection =
-            if keyPressed == Just leftArrow then
-                Left
-            else if keyPressed == Just rightArrow then
-                Right
-            else
-                mario.direction
     in
-        { mario | acceleration = newAcceleration, direction = newDirection }
+        { mario | acceleration = acceleration, direction = direction }
 
 
 updateMarioVelocity : Time -> List KeyCode -> Entity -> Entity
