@@ -6,6 +6,7 @@ import Html exposing (Html)
 import AnimationFrame
 import Keyboard exposing (KeyCode)
 import Time exposing (Time)
+import Vector exposing (Vector)
 
 
 ---- MODEL ----
@@ -15,7 +16,7 @@ type alias Entity =
     { x : Float
     , y : Float
     , velocity : Float
-    , acceleration : Float
+    , acceleration : Vector
     , direction : Direction
     , state : EntityState
     }
@@ -59,7 +60,7 @@ init flags =
     ( { charactersPath = flags.charactersPath
       , tilesPath = flags.tilesPath
       , elapsedTime = 0
-      , mario = { x = 80, y = 32, velocity = 0, acceleration = 0, direction = Right, state = Idle }
+      , mario = { x = 80, y = 32, velocity = 0, acceleration = Vector.zero, direction = Right, state = Idle }
       , keysPressed = []
       , collided = "Nope."
       }
@@ -222,7 +223,7 @@ updateMarioAcceleration dt keysPressed mario =
         drag =
             mario.velocity * 2
 
-        acceleration =
+        baseAcceleration =
             200
 
         leftArrow =
@@ -233,20 +234,34 @@ updateMarioAcceleration dt keysPressed mario =
 
         keyPressed =
             List.head keysPressed
+
+        acceleration =
+            mario.acceleration
+
+        newAcceleration =
+            if keyPressed == Just leftArrow then
+                { acceleration | x = -baseAcceleration - drag }
+            else if keyPressed == Just rightArrow then
+                { acceleration | x = baseAcceleration - drag }
+            else
+                { acceleration | x = -drag }
+
+        newDirection =
+            if keyPressed == Just leftArrow then
+                Left
+            else if keyPressed == Just rightArrow then
+                Right
+            else
+                mario.direction
     in
-        if keyPressed == Just leftArrow then
-            { mario | acceleration = -acceleration - drag, direction = Left }
-        else if keyPressed == Just rightArrow then
-            { mario | acceleration = acceleration - drag, direction = Right }
-        else
-            { mario | acceleration = -drag }
+        { mario | acceleration = newAcceleration, direction = newDirection }
 
 
 updateMarioVelocity : Time -> List KeyCode -> Entity -> Entity
 updateMarioVelocity dt keysPressed mario =
     let
         velocity =
-            mario.velocity + mario.acceleration * dt / 1000
+            mario.velocity + mario.acceleration.x * dt / 1000
 
         minVelocity =
             2
