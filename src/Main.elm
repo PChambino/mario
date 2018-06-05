@@ -91,7 +91,6 @@ update msg model =
                         |> updateMarioAcceleration dt model.keysPressed
                         |> updateMarioVelocity dt model.keysPressed
                         |> moveMario dt model.keysPressed
-                        |> applyGravity
 
                 collidedTiles =
                     calculateTilesCollisions movedMario
@@ -115,11 +114,6 @@ update msg model =
 
         KeyUp keyCode ->
             ( { model | keysPressed = model.keysPressed |> List.filter (\k -> k /= keyCode) }, Cmd.none )
-
-
-applyGravity : Entity -> Entity
-applyGravity entity =
-    { entity | y = entity.y + 1 }
 
 
 calculateTilesCollisions : Entity -> List Tile
@@ -177,7 +171,7 @@ collideMario mario tiles =
                 else if anyTileLeft then
                     { mario | x = toFloat marioGridX * 16 - 2, velocity = { x = 0, y = mario.velocity.y } }
                 else if anyTileBelow then
-                    { mario | y = toFloat marioGridY * 16, state = Idle }
+                    { mario | y = toFloat marioGridY * 16, velocity = { x = mario.velocity.x, y = 0 }, state = Idle }
                 else
                     mario
 
@@ -238,13 +232,19 @@ updateMarioAcceleration dt keysPressed mario =
         acceleration =
             mario.acceleration
 
-        newAcceleration =
+        gravity =
+            100
+
+        newHorizontalAcceleration =
             if keyPressed == Just leftArrow then
-                { acceleration | x = -baseAcceleration - drag }
+                -baseAcceleration - drag
             else if keyPressed == Just rightArrow then
-                { acceleration | x = baseAcceleration - drag }
+                baseAcceleration - drag
             else
-                { acceleration | x = -drag }
+                -drag
+
+        newAcceleration =
+            { acceleration | x = newHorizontalAcceleration, y = gravity }
 
         newDirection =
             if keyPressed == Just leftArrow then
@@ -265,6 +265,12 @@ updateMarioVelocity dt keysPressed mario =
                 |> Vector.scale (dt / 1000)
                 |> Vector.add mario.velocity
 
+        roundVelocity =
+            if abs velocity.x < minVelocity then
+                { velocity | x = 0 }
+            else
+                velocity
+
         minVelocity =
             2
 
@@ -277,10 +283,10 @@ updateMarioVelocity dt keysPressed mario =
         keyPressed =
             List.head keysPressed
     in
-        if keyPressed == Just leftArrow || keyPressed == Just rightArrow || Vector.length velocity > minVelocity then
+        if keyPressed == Just leftArrow || keyPressed == Just rightArrow then
             { mario | velocity = velocity }
         else
-            { mario | velocity = Vector.zero }
+            { mario | velocity = roundVelocity }
 
 
 moveMario : Time -> List KeyCode -> Entity -> Entity
