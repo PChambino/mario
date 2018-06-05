@@ -15,7 +15,7 @@ import Vector exposing (Vector)
 type alias Entity =
     { x : Float
     , y : Float
-    , velocity : Float
+    , velocity : Vector
     , acceleration : Vector
     , direction : Direction
     , state : EntityState
@@ -60,7 +60,7 @@ init flags =
     ( { charactersPath = flags.charactersPath
       , tilesPath = flags.tilesPath
       , elapsedTime = 0
-      , mario = { x = 80, y = 32, velocity = 0, acceleration = Vector.zero, direction = Right, state = Idle }
+      , mario = { x = 80, y = 32, velocity = Vector.zero, acceleration = Vector.zero, direction = Right, state = Idle }
       , keysPressed = []
       , collided = "Nope."
       }
@@ -169,13 +169,13 @@ collideMario mario tiles =
 
             tiles ->
                 if anyTileBelow && anyTileRight then
-                    { mario | x = toFloat marioGridX * 16 + 2, y = toFloat marioGridY * 16, velocity = 0, state = Idle }
+                    { mario | x = toFloat marioGridX * 16 + 2, y = toFloat marioGridY * 16, velocity = Vector.zero, state = Idle }
                 else if anyTileBelow && anyTileLeft then
-                    { mario | x = toFloat marioGridX * 16 - 2, y = toFloat marioGridY * 16, velocity = 0, state = Idle }
+                    { mario | x = toFloat marioGridX * 16 - 2, y = toFloat marioGridY * 16, velocity = Vector.zero, state = Idle }
                 else if anyTileRight then
-                    { mario | x = toFloat marioGridX * 16 + 2, velocity = 0 }
+                    { mario | x = toFloat marioGridX * 16 + 2, velocity = { x = 0, y = mario.velocity.y } }
                 else if anyTileLeft then
-                    { mario | x = toFloat marioGridX * 16 - 2, velocity = 0 }
+                    { mario | x = toFloat marioGridX * 16 - 2, velocity = { x = 0, y = mario.velocity.y } }
                 else if anyTileBelow then
                     { mario | y = toFloat marioGridY * 16, state = Idle }
                 else
@@ -221,7 +221,7 @@ updateMarioAcceleration : Time -> List KeyCode -> Entity -> Entity
 updateMarioAcceleration dt keysPressed mario =
     let
         drag =
-            mario.velocity * 2
+            mario.velocity.x * 2
 
         baseAcceleration =
             200
@@ -261,7 +261,9 @@ updateMarioVelocity : Time -> List KeyCode -> Entity -> Entity
 updateMarioVelocity dt keysPressed mario =
     let
         velocity =
-            mario.velocity + mario.acceleration.x * dt / 1000
+            mario.acceleration
+                |> Vector.scale (dt / 1000)
+                |> Vector.add mario.velocity
 
         minVelocity =
             2
@@ -275,10 +277,10 @@ updateMarioVelocity dt keysPressed mario =
         keyPressed =
             List.head keysPressed
     in
-        if keyPressed == Just leftArrow || keyPressed == Just rightArrow || abs velocity > minVelocity then
+        if keyPressed == Just leftArrow || keyPressed == Just rightArrow || Vector.length velocity > minVelocity then
             { mario | velocity = velocity }
         else
-            { mario | velocity = 0 }
+            { mario | velocity = Vector.zero }
 
 
 moveMario : Time -> List KeyCode -> Entity -> Entity
@@ -289,11 +291,16 @@ moveMario dt keysPressed mario =
 
         keyPressed =
             List.head keysPressed
+
+        newPosition =
+            mario.velocity
+                |> Vector.scale (dt / 1000)
+                |> Vector.add { x = mario.x, y = mario.y }
     in
         if keyPressed == Just topArrow && mario.state /= InAir then
             { mario | y = mario.y - 32, state = InAir }
         else
-            { mario | x = mario.x + mario.velocity * dt / 1000 }
+            { mario | x = newPosition.x, y = newPosition.y }
 
 
 drawLevel : List Tile -> String -> List (Svg Msg)
