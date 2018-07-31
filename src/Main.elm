@@ -29,8 +29,9 @@ type Direction
 
 
 type EntityState
-    = Idle
-    | InAir
+    = Ready
+    | Jumping Float
+    | Falling
 
 
 type alias Tile =
@@ -67,7 +68,7 @@ init flags =
             , velocity = Vector.zero
             , acceleration = Vector.zero
             , direction = Right
-            , state = InAir
+            , state = Falling
             }
       , keysPressed = Set.empty
       , collided = "Nope."
@@ -169,15 +170,15 @@ collideMario mario tiles =
 
             tiles ->
                 if anyTileBelow && anyTileRight then
-                    { mario | x = toFloat marioGridX * 16 + 2, y = toFloat marioGridY * 16, velocity = Vector.zero, state = Idle }
+                    { mario | x = toFloat marioGridX * 16 + 2, y = toFloat marioGridY * 16, velocity = Vector.zero, state = Ready }
                 else if anyTileBelow && anyTileLeft then
-                    { mario | x = toFloat marioGridX * 16 - 2, y = toFloat marioGridY * 16, velocity = Vector.zero, state = Idle }
+                    { mario | x = toFloat marioGridX * 16 - 2, y = toFloat marioGridY * 16, velocity = Vector.zero, state = Ready }
                 else if anyTileRight then
                     { mario | x = toFloat marioGridX * 16 + 2, velocity = { x = 0, y = mario.velocity.y } }
                 else if anyTileLeft then
                     { mario | x = toFloat marioGridX * 16 - 2, velocity = { x = 0, y = mario.velocity.y } }
                 else if anyTileBelow then
-                    { mario | y = toFloat marioGridY * 16, velocity = { x = mario.velocity.x, y = 0 }, state = Idle }
+                    { mario | y = toFloat marioGridY * 16, velocity = { x = mario.velocity.x, y = 0 }, state = Ready }
                 else
                     mario
 
@@ -235,7 +236,7 @@ updateMarioAcceleration dt keysPressed mario =
                 |> applyDrag
 
         applyGravity acc =
-            { acc | y = 200 }
+            { acc | y = 300 }
 
         applyForce acc =
             if Set.member leftArrow keysPressed then
@@ -269,21 +270,36 @@ jumpMario dt keysPressed mario =
         topArrow =
             38
 
-        startJump =
-            Set.member topArrow keysPressed && mario.state /= InAir
+        jumping =
+            Set.member topArrow keysPressed
 
-        velocity =
-            if startJump then
-                mario.velocity
-                    |> Vector.add (Vector 0 -200)
-            else
-                mario.velocity
+        jumpVelocity =
+            Vector mario.velocity.x -100
 
-        state =
-            if startJump then
-                InAir
+        maxJumpDistance =
+            50
+
+        ( state, velocity ) =
+            if jumping then
+                case mario.state of
+                    Ready ->
+                        ( Jumping mario.y, jumpVelocity )
+
+                    Jumping y ->
+                        if y - mario.y < maxJumpDistance then
+                            ( Jumping y, jumpVelocity )
+                        else
+                            ( Falling, mario.velocity )
+
+                    _ ->
+                        ( Falling, mario.velocity )
             else
-                mario.state
+                case mario.state of
+                    Ready ->
+                        ( Ready, mario.velocity )
+
+                    _ ->
+                        ( Falling, mario.velocity )
     in
         { mario | velocity = velocity, state = state }
 
