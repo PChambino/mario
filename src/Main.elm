@@ -60,7 +60,14 @@ init flags =
     ( { charactersPath = flags.charactersPath
       , tilesPath = flags.tilesPath
       , elapsedTime = 0
-      , mario = { x = 80, y = 32, velocity = Vector.zero, acceleration = Vector.zero, direction = Right, state = Idle }
+      , mario =
+            { x = 80
+            , y = 32
+            , velocity = Vector.zero
+            , acceleration = Vector.zero
+            , direction = Right
+            , state = InAir
+            }
       , keysPressed = []
       , collided = "Nope."
       }
@@ -88,6 +95,7 @@ update msg model =
 
                 movedMario =
                     model.mario
+                        |> jumpMario dt model.keysPressed
                         |> updateMarioAcceleration dt model.keysPressed
                         |> updateMarioVelocity dt model.keysPressed
                         |> moveMario dt model.keysPressed
@@ -229,7 +237,7 @@ updateMarioAcceleration dt keysPressed mario =
                 |> applyDrag
 
         applyGravity acc =
-            { acc | y = 100 }
+            { acc | y = 200 }
 
         applyForce acc =
             if keyPressed == Just leftArrow then
@@ -258,6 +266,34 @@ updateMarioAcceleration dt keysPressed mario =
             List.head keysPressed
     in
         { mario | acceleration = acceleration, direction = direction }
+
+
+jumpMario : Time -> List KeyCode -> Entity -> Entity
+jumpMario dt keysPressed mario =
+    let
+        keyPressed =
+            List.head keysPressed
+
+        topArrow =
+            38
+
+        startJump =
+            keyPressed == Just topArrow && mario.state /= InAir
+
+        velocity =
+            if startJump then
+                mario.velocity
+                    |> Vector.add (Vector 0 -200)
+            else
+                mario.velocity
+
+        state =
+            if startJump then
+                InAir
+            else
+                mario.state
+    in
+        { mario | velocity = velocity, state = state }
 
 
 updateMarioVelocity : Time -> List KeyCode -> Entity -> Entity
@@ -295,21 +331,12 @@ updateMarioVelocity dt keysPressed mario =
 moveMario : Time -> List KeyCode -> Entity -> Entity
 moveMario dt keysPressed mario =
     let
-        topArrow =
-            38
-
-        keyPressed =
-            List.head keysPressed
-
         newPosition =
             mario.velocity
                 |> Vector.scale (dt / 1000)
                 |> Vector.add { x = mario.x, y = mario.y }
     in
-        if keyPressed == Just topArrow && mario.state /= InAir then
-            { mario | y = mario.y - 32, state = InAir }
-        else
-            { mario | x = newPosition.x, y = newPosition.y }
+        { mario | x = newPosition.x, y = newPosition.y }
 
 
 drawLevel : List Tile -> String -> List (Svg Msg)
