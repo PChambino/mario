@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Set exposing (Set)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Html exposing (Html)
@@ -44,7 +45,7 @@ type alias Model =
     , tilesPath : String
     , elapsedTime : Float
     , mario : Entity
-    , keysPressed : List KeyCode
+    , keysPressed : Set KeyCode
     , collided : String
     }
 
@@ -68,7 +69,7 @@ init flags =
             , direction = Right
             , state = InAir
             }
-      , keysPressed = []
+      , keysPressed = Set.empty
       , collided = "Nope."
       }
     , Cmd.none
@@ -115,13 +116,10 @@ update msg model =
                 )
 
         KeyDown keyCode ->
-            if List.member keyCode model.keysPressed then
-                ( model, Cmd.none )
-            else
-                ( { model | keysPressed = keyCode :: model.keysPressed }, Cmd.none )
+            ( { model | keysPressed = Set.insert keyCode model.keysPressed }, Cmd.none )
 
         KeyUp keyCode ->
-            ( { model | keysPressed = model.keysPressed |> List.filter (\k -> k /= keyCode) }, Cmd.none )
+            ( { model | keysPressed = Set.remove keyCode model.keysPressed }, Cmd.none )
 
 
 calculateTilesCollisions : Entity -> List Tile
@@ -214,18 +212,18 @@ view model =
                     , [ drawMario model.mario model.charactersPath ]
                     ]
                 )
-            , Html.div [] [ text (model.keysPressed |> List.map toString |> String.join ", ") ]
+            , Html.div [] [ text (model.keysPressed |> Set.toList |> List.map toString |> String.join ", ") ]
             , Html.div [] [ text model.collided ]
             ]
 
 
-updateMarioAcceleration : Time -> List KeyCode -> Entity -> Entity
+updateMarioAcceleration : Time -> Set KeyCode -> Entity -> Entity
 updateMarioAcceleration dt keysPressed mario =
     let
         direction =
-            if keyPressed == Just leftArrow then
+            if Set.member leftArrow keysPressed then
                 Left
-            else if keyPressed == Just rightArrow then
+            else if Set.member rightArrow keysPressed then
                 Right
             else
                 mario.direction
@@ -240,9 +238,9 @@ updateMarioAcceleration dt keysPressed mario =
             { acc | y = 200 }
 
         applyForce acc =
-            if keyPressed == Just leftArrow then
+            if Set.member leftArrow keysPressed then
                 { acc | x = -baseAcceleration }
-            else if keyPressed == Just rightArrow then
+            else if Set.member rightArrow keysPressed then
                 { acc | x = baseAcceleration }
             else
                 { acc | x = 0 }
@@ -261,24 +259,18 @@ updateMarioAcceleration dt keysPressed mario =
 
         rightArrow =
             39
-
-        keyPressed =
-            List.head keysPressed
     in
         { mario | acceleration = acceleration, direction = direction }
 
 
-jumpMario : Time -> List KeyCode -> Entity -> Entity
+jumpMario : Time -> Set KeyCode -> Entity -> Entity
 jumpMario dt keysPressed mario =
     let
-        keyPressed =
-            List.head keysPressed
-
         topArrow =
             38
 
         startJump =
-            keyPressed == Just topArrow && mario.state /= InAir
+            Set.member topArrow keysPressed && mario.state /= InAir
 
         velocity =
             if startJump then
@@ -296,7 +288,7 @@ jumpMario dt keysPressed mario =
         { mario | velocity = velocity, state = state }
 
 
-updateMarioVelocity : Time -> List KeyCode -> Entity -> Entity
+updateMarioVelocity : Time -> Set KeyCode -> Entity -> Entity
 updateMarioVelocity dt keysPressed mario =
     let
         velocity =
@@ -318,17 +310,14 @@ updateMarioVelocity dt keysPressed mario =
 
         rightArrow =
             39
-
-        keyPressed =
-            List.head keysPressed
     in
-        if keyPressed == Just leftArrow || keyPressed == Just rightArrow then
+        if Set.fromList [ leftArrow, rightArrow ] |> Set.intersect keysPressed |> Set.isEmpty |> not then
             { mario | velocity = velocity }
         else
             { mario | velocity = roundVelocity }
 
 
-moveMario : Time -> List KeyCode -> Entity -> Entity
+moveMario : Time -> Set KeyCode -> Entity -> Entity
 moveMario dt keysPressed mario =
     let
         newPosition =
